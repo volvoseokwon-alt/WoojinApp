@@ -129,6 +129,8 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
 .pr-score{font-size:1.1rem;font-weight:900;margin-bottom:6px;}
 .score-bar-wrap{background:#e0e0e0;border-radius:10px;height:10px;margin:6px 0 10px;overflow:hidden;}
 .score-bar{height:100%;border-radius:10px;transition:width .5s;}
+.play-rec-btn{background:linear-gradient(135deg,#FFD23F,#ffb347);border:none;border-radius:20px;padding:6px 14px;font-size:0.8rem;font-weight:700;color:#7a4f00;cursor:pointer;margin-top:8px;display:inline-flex;align-items:center;gap:5px;}
+.play-rec-btn:active{transform:scale(0.95);}
 
 </style>
 </head>
@@ -1114,6 +1116,10 @@ function renderPronun() {
 }
 
 let recObj = null;
+let mediaRec = null;
+let audioChunks = [];
+let recAudioBlobs = {}; // key -> blob URL
+
 function startRec(key, targetText) {
   const btn = document.getElementById('mic-' + key);
   const resDiv = document.getElementById('pr-' + key);
@@ -1123,30 +1129,81 @@ function startRec(key, targetText) {
   const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
   if (!SR) return;
 
-  recObj = new SR();
-  recObj.lang = 'en-US';
-  recObj.interimResults = false;
-  recObj.maxAlternatives = 1;
+  // 마이크 스트림 요청 → MediaRecorder로 녹음도 동시에
+  navigator.mediaDevices.getUserMedia({audio:true}).then(stream => {
+    // MediaRecorder 설정
+    audioChunks = [];
+    try {
+      mediaRec = new MediaRecorder(stream);
+      mediaRec.ondataavailable = e => { if(e.data.size>0) audioChunks.push(e.data); };
+      mediaRec.onstop = () => {
+        const blob = new Blob(audioChunks, {type:'audio/webm'});
+        if(recAudioBlobs[key]) URL.revokeObjectURL(recAudioBlobs[key]);
+        recAudioBlobs[key] = URL.createObjectURL(blob);
+        stream.getTracks().forEach(t=>t.stop());
+        // 내 발음 듣기 버튼 추가
+        const existing = document.getElementById('playback-'+key);
+        if(existing) existing.remove();
+        const playBtn = document.createElement('button');
+        playBtn.className = 'play-rec-btn';
+        playBtn.id = 'playback-'+key;
+        playBtn.innerHTML = '▶ 내 발음 듣기';
+        playBtn.onclick = () => {
+          const audio = new Audio(recAudioBlobs[key]);
+          audio.play();
+          playBtn.innerHTML = '🔊 재생중...';
+          audio.onended = () => { playBtn.innerHTML = '▶ 내 발음 듣기'; };
+        };
+        resDiv.appendChild(playBtn);
+      };
+      mediaRec.start();
+    } catch(e) { console.log('MediaRecorder 미지원'); }
 
-  btn.classList.add('recording');
-  btn.textContent = '⏹';
-  resDiv.className = 'pronun-result';
-  resDiv.innerHTML = '<span style="color:#aaa">듣는 중...</span>';
-  resDiv.classList.add('show');
+    // SpeechRecognition
+    recObj = new SR();
+    recObj.lang = 'en-US';
+    recObj.interimResults = false;
+    recObj.maxAlternatives = 1;
 
-  recObj.onresult = (e) => {
-    const said = e.results[0][0].transcript.trim().toLowerCase();
-    showPronunResult(key, targetText, said);
-  };
-  recObj.onerror = (e) => {
-    btn.classList.remove('recording'); btn.textContent = '🎤'; recObj = null;
-    resDiv.innerHTML = '<span style="color:#aaa">인식 실패. 다시 시도해주세요.</span>';
-    resDiv.className = 'pronun-result show bad';
-  };
-  recObj.onend = () => {
-    btn.classList.remove('recording'); btn.textContent = '🎤'; recObj = null;
-  };
-  recObj.start();
+    btn.classList.add('recording');
+    btn.textContent = '⏹';
+    resDiv.className = 'pronun-result';
+    resDiv.innerHTML = '<span style="color:#aaa">듣는 중...</span>';
+    resDiv.classList.add('show');
+
+    recObj.onresult = (e) => {
+      const said = e.results[0][0].transcript.trim().toLowerCase();
+      if(mediaRec && mediaRec.state==='recording') mediaRec.stop();
+      showPronunResult(key, targetText, said);
+    };
+    recObj.onerror = (e) => {
+      btn.classList.remove('recording'); btn.textContent = '🎤'; recObj = null;
+      if(mediaRec && mediaRec.state==='recording') mediaRec.stop();
+      resDiv.innerHTML = '<span style="color:#aaa">인식 실패. 다시 시도해주세요.</span>';
+      resDiv.className = 'pronun-result show bad';
+    };
+    recObj.onend = () => {
+      btn.classList.remove('recording'); btn.textContent = '🎤'; recObj = null;
+      if(mediaRec && mediaRec.state==='recording') mediaRec.stop();
+    };
+    recObj.start();
+  }).catch(() => {
+    // getUserMedia 실패시 SR만 사용
+    recObj = new SR();
+    recObj.lang = 'en-US';
+    recObj.interimResults = false;
+    recObj.maxAlternatives = 1;
+    btn.classList.add('recording');
+    btn.textContent = '⏹';
+    resDiv.className = 'pronun-result show';
+    resDiv.innerHTML = '<span style="color:#aaa">듣는 중...</span>';
+    recObj.onresult = (e) => {
+      showPronunResult(key, targetText, e.results[0][0].transcript.trim().toLowerCase());
+    };
+    recObj.onerror = () => { btn.classList.remove('recording'); btn.textContent='🎤'; recObj=null; };
+    recObj.onend = () => { btn.classList.remove('recording'); btn.textContent='🎤'; recObj=null; };
+    recObj.start();
+  });
 }
 
 function showPronunResult(key, target, said) {
