@@ -112,6 +112,28 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
 .stat-l{font-size:0.72rem;color:var(--muted);margin-top:4px;}
 .c-blue{color:var(--sky);}.c-green{color:var(--grass);}.c-coral{color:var(--coral);}.c-purple{color:var(--purple);}
 .reset-btn{width:100%;padding:13px;background:#f5f5f5;border:2px solid #e0e0e0;border-radius:14px;font-family:'Apple SD Gothic Neo','Malgun Gothic','나눔고딕',sans-serif;font-size:0.9rem;font-weight:700;color:var(--muted);cursor:pointer;}
+/* ── 통계 ── */
+.period-tabs{display:flex;background:white;border-radius:14px;padding:4px;margin-bottom:14px;box-shadow:0 2px 8px rgba(0,0,0,0.06);gap:4px;}
+.period-tab{flex:1;padding:10px 6px;border:none;background:none;font-family:'Apple SD Gothic Neo','Malgun Gothic',sans-serif;font-size:0.85rem;font-weight:700;color:var(--muted);cursor:pointer;border-radius:10px;transition:all .15s;}
+.period-tab.active{background:linear-gradient(135deg,var(--sky),var(--purple));color:white;}
+.ch-stat-bar{background:white;border-radius:14px;padding:14px 16px;margin-bottom:8px;box-shadow:0 2px 8px rgba(0,0,0,0.06);}
+.ch-stat-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.ch-stat-name{font-size:0.85rem;font-weight:700;color:var(--text);}
+.ch-stat-count{font-size:0.78rem;color:var(--muted);}
+.ch-stat-track{background:#eee;border-radius:10px;height:8px;overflow:hidden;}
+.ch-stat-fill{height:100%;border-radius:10px;background:linear-gradient(to right,var(--sky),var(--purple));transition:width .5s;}
+.ch-stat-fill.full{background:linear-gradient(to right,var(--grass),#45a049);}
+.day-row{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.day-label{font-size:0.72rem;color:var(--muted);min-width:32px;text-align:right;}
+.day-bar-wrap{flex:1;background:#eee;border-radius:6px;height:18px;overflow:hidden;position:relative;}
+.day-bar-fill{height:100%;border-radius:6px;background:linear-gradient(to right,var(--sky),var(--purple));transition:width .5s;}
+.day-bar-num{position:absolute;right:6px;top:50%;transform:translateY(-50%);font-size:0.68rem;font-weight:700;color:white;}
+.heatmap{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:6px;}
+.hmap-cell{aspect-ratio:1;border-radius:4px;background:#eee;}
+.hmap-cell.l1{background:#bde4ff;}.hmap-cell.l2{background:#5BB8F5;}.hmap-cell.l3{background:#7B5EA7;}.hmap-cell.l4{background:#4a3a7a;}
+.hmap-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px;}
+.hmap-day{font-size:0.6rem;color:var(--muted);text-align:center;}
+.empty-stat{text-align:center;padding:30px 16px;color:#bbb;font-size:0.85rem;}
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(91,184,245,.5);}70%{box-shadow:0 0 0 10px rgba(91,184,245,0);}100%{box-shadow:0 0 0 0 rgba(91,184,245,0);}}
 .pulsing{animation:pulse .7s ease-out;}
 /* ── 발음 확인 ── */
@@ -220,15 +242,30 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
 </div>
 
 <div id="page-stats" class="page">
-  <div class="sec-title">📊 학습 기록</div>
+  <!-- 요약 카드 -->
+  <div class="sec-title">📊 전체 요약</div>
   <div class="stats-grid">
     <div class="stat-box"><div class="stat-n c-blue"   id="st-plays">0</div><div class="stat-l">문장 재생</div></div>
     <div class="stat-box"><div class="stat-n c-green"  id="st-done">0</div><div class="stat-l">완료 문장</div></div>
     <div class="stat-box"><div class="stat-n c-coral"  id="st-wdone">0</div><div class="stat-l">완료 단어</div></div>
     <div class="stat-box"><div class="stat-n c-purple" id="st-qcor">0</div><div class="stat-l">퀴즈 정답</div></div>
   </div>
-  <div class="sec-title">✅ 완료한 문장</div>
-  <div id="done-list"></div>
+
+  <!-- 주간/월간 탭 -->
+  <div class="sec-title">📅 기간별 학습</div>
+  <div class="period-tabs">
+    <button class="period-tab active" onclick="switchPeriod('week')">이번 주</button>
+    <button class="period-tab"        onclick="switchPeriod('month')">이번 달</button>
+    <button class="period-tab"        onclick="switchPeriod('all')">전체</button>
+  </div>
+
+  <!-- 일별 활동 바 -->
+  <div id="period-daily"></div>
+
+  <!-- 챕터별 진행도 -->
+  <div class="sec-title" id="period-ch-title">📚 챕터별 학습량</div>
+  <div id="period-ch-list"></div>
+
   <button class="reset-btn" style="margin-top:14px" onclick="resetAll()">🔄 기록 초기화</button>
 </div>
 
@@ -835,7 +872,8 @@ const CHAPTERS = [
 ];
 
 // ── STATE ──
-let ST = JSON.parse(localStorage.getItem('eng30v2')||'null') || {done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0};
+let ST = JSON.parse(localStorage.getItem('eng30v2')||'null') || {done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{}};
+if(!ST.log) ST.log={};
 function save(){localStorage.setItem('eng30v2',JSON.stringify(ST));}
 function allSentences(){return CHAPTERS.flatMap(ch=>ch.sentences.map((s,i)=>({...s,chId:ch.id,idx:i,key:`ch${ch.id}_${i}`})));}
 function allWords(){return CHAPTERS.flatMap(ch=>ch.words.map((w,i)=>({...w,chId:ch.id,idx:i,key:`wch${ch.id}_${i}`})));}
@@ -922,6 +960,7 @@ function tapCard(key,chId,idx){
   speak(s.en,()=>{
     if(!ST.done[key]){ST.done[key]=true;card.classList.add('done');card.querySelector('.s-icon').textContent='✓';}
     ST.plays[key]=(ST.plays[key]||0)+1;ST.totalPlays++;
+    logActivity(ch.id,'s');
     save();renderCards();buildChGrid();
   });
   card.classList.add('pulsing');setTimeout(()=>card.classList.remove('pulsing'),800);
@@ -962,6 +1001,7 @@ function tapWord(key,chId,idx){
   card.classList.add('wrev');
   speak(w.en,()=>{
     if(!ST.wdone[key]){ST.wdone[key]=true;card.classList.add('wdone');}
+    logActivity(ch.id,'w');
     save();renderWords();buildChGrid();
   });
   card.classList.add('pulsing');setTimeout(()=>card.classList.remove('pulsing'),800);
@@ -1047,27 +1087,161 @@ function qAnswer(btn,correct){
 }
 
 // ── STATS ──
+let currentPeriod = 'week';
+
+function dateKey(d){ return d.toISOString().slice(0,10); }
+
+function logActivity(chId, type){
+  const k = dateKey(new Date());
+  if(!ST.log[k]) ST.log[k] = {};
+  if(!ST.log[k][chId]) ST.log[k][chId] = {s:0,w:0};
+  ST.log[k][chId][type] = (ST.log[k][chId][type]||0)+1;
+}
+
+function getPeriodDates(period){
+  const today = new Date();
+  today.setHours(0,0,0,0);
+  const dates = [];
+  if(period==='week'){
+    const dow = today.getDay(); // 0=일
+    const mon = new Date(today); mon.setDate(today.getDate() - ((dow+6)%7));
+    for(let i=0;i<7;i++){ const d=new Date(mon); d.setDate(mon.getDate()+i); dates.push(d); }
+  } else if(period==='month'){
+    const y=today.getFullYear(), m=today.getMonth();
+    const days=new Date(y,m+1,0).getDate();
+    for(let i=1;i<=days;i++) dates.push(new Date(y,m,i));
+  } else {
+    // all: last 60 days
+    for(let i=59;i>=0;i--){ const d=new Date(today); d.setDate(today.getDate()-i); dates.push(d); }
+  }
+  return dates;
+}
+
+function switchPeriod(p){
+  currentPeriod=p;
+  document.querySelectorAll('.period-tab').forEach((b,i)=>{
+    b.classList.toggle('active',['week','month','all'][i]===p);
+  });
+  renderPeriodStats();
+}
+
 function renderStats(){
   document.getElementById('st-plays').textContent=ST.totalPlays||0;
   document.getElementById('st-done').textContent=Object.keys(ST.done).length;
   document.getElementById('st-wdone').textContent=Object.keys(ST.wdone).length;
   document.getElementById('st-qcor').textContent=(ST.qCor||0)+(ST.wqCor||0);
-  const doneKeys=Object.keys(ST.done);
-  const dl=document.getElementById('done-list');
-  if(!doneKeys.length){dl.innerHTML='<p style="color:#bbb;font-size:0.85rem;padding:8px 0">아직 완료한 문장이 없어요.</p>';return;}
-  dl.innerHTML=doneKeys.map(k=>{
-    const m=k.match(/^ch(\d+)_(\d+)$/);if(!m)return'';
-    const ch=CHAPTERS.find(c=>c.id===parseInt(m[1]));const s=ch?.sentences[parseInt(m[2])];if(!s)return'';
-    return`<div class="s-card done" style="margin-bottom:8px;cursor:default">
-      <div class="s-emoji">${s.emoji}</div>
-      <div class="s-body"><div class="s-ko" style="font-size:0.9rem">${s.ko}</div>
-      <div class="s-en" style="max-height:40px;opacity:1">${s.en}</div></div>
-      <div class="s-icon" style="color:var(--grass)">✓</div></div>`;
+  renderPeriodStats();
+}
+
+function renderPeriodStats(){
+  const period = currentPeriod;
+  const dates = getPeriodDates(period);
+  const DAY_KO = ['일','월','화','수','목','금','토'];
+
+  // 기간 내 로그 집계
+  const dayTotals = {}; // dateKey -> total count
+  const chTotals = {};  // chId -> total count
+
+  dates.forEach(d=>{
+    const k=dateKey(d);
+    const log=ST.log[k]||{};
+    let total=0;
+    Object.entries(log).forEach(([chId,v])=>{
+      const n=(v.s||0)+(v.w||0);
+      total+=n;
+      chTotals[chId]=(chTotals[chId]||0)+n;
+    });
+    dayTotals[k]=total;
+  });
+
+  const maxDay = Math.max(...Object.values(dayTotals),1);
+  const hasAny = Object.values(dayTotals).some(v=>v>0);
+
+  // ── 일별 바 ──
+  const dailyEl = document.getElementById('period-daily');
+  if(!hasAny){
+    dailyEl.innerHTML='<div class="empty-stat">📖 아직 이 기간에 학습 기록이 없어요!</div>';
+  } else if(period==='week'){
+    dailyEl.innerHTML = `<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      ${dates.map(d=>{
+        const k=dateKey(d);
+        const v=dayTotals[k]||0;
+        const pct=Math.round(v/maxDay*100);
+        const isToday=k===dateKey(new Date());
+        return`<div class="day-row">
+          <div class="day-label" style="${isToday?'color:var(--purple);font-weight:900':''}">${DAY_KO[d.getDay()]}</div>
+          <div class="day-bar-wrap">
+            <div class="day-bar-fill" style="width:${pct}%"></div>
+            ${v>0?`<div class="day-bar-num">${v}</div>`:''}
+          </div>
+          <div style="font-size:0.7rem;color:var(--muted);min-width:24px;text-align:right">${v||''}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+  } else {
+    // 월간/전체: 히트맵
+    const cells = dates.map(d=>{
+      const v=dayTotals[dateKey(d)]||0;
+      const lvl=v===0?'':v<3?'l1':v<6?'l2':v<10?'l3':'l4';
+      return`<div class="hmap-cell ${lvl}" title="${dateKey(d)}: ${v}회"></div>`;
+    }).join('');
+    const today = new Date();
+    const monthLabel = period==='month'
+      ? `${today.getMonth()+1}월 학습 히트맵`
+      : '최근 60일 히트맵';
+    dailyEl.innerHTML=`<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="font-size:0.75rem;color:var(--muted);margin-bottom:8px">${monthLabel}</div>
+      <div class="hmap-days">${DAY_KO.map(d=>`<div class="hmap-day">${d}</div>`).join('')}</div>
+      <div class="heatmap">${cells}</div>
+      <div style="display:flex;align-items:center;gap:6px;font-size:0.65rem;color:var(--muted);margin-top:6px;">
+        <span>적음</span>
+        <div style="width:12px;height:12px;border-radius:3px;background:#bde4ff"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:#5BB8F5"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:#7B5EA7"></div>
+        <div style="width:12px;height:12px;border-radius:3px;background:#4a3a7a"></div>
+        <span>많음</span>
+      </div>
+    </div>`;
+  }
+
+  // ── 챕터별 학습량 ──
+  const chTitle = document.getElementById('period-ch-title');
+  const periodLabel = period==='week'?'이번 주':period==='month'?'이번 달':'전체';
+  chTitle.textContent = `📚 ${periodLabel} 챕터별 학습량`;
+
+  const chList = document.getElementById('period-ch-list');
+  const activeChs = CHAPTERS.filter(ch=>ch.sentences.length>0 && chTotals[ch.id]>0)
+    .sort((a,b)=>(chTotals[b.id]||0)-(chTotals[a.id]||0));
+
+  if(!activeChs.length){
+    chList.innerHTML='<div class="empty-stat">이 기간에 학습한 챕터가 없어요.</div>';
+    return;
+  }
+
+  const maxCh = Math.max(...activeChs.map(ch=>chTotals[ch.id]||0),1);
+  chList.innerHTML = activeChs.map(ch=>{
+    const cnt = chTotals[ch.id]||0;
+    const pct = Math.round(cnt/maxCh*100);
+    const totalItems = ch.sentences.length + ch.words.length;
+    const doneCnt = ch.sentences.filter((_,i)=>ST.done[`ch${ch.id}_${i}`]).length
+                  + ch.words.filter((_,i)=>ST.wdone[`wch${ch.id}_${i}`]).length;
+    const compPct = Math.round(doneCnt/totalItems*100);
+    const isFull = compPct===100;
+    return`<div class="ch-stat-bar">
+      <div class="ch-stat-top">
+        <div class="ch-stat-name">Ch.${String(ch.id).padStart(2,'0')} · ${ch.title}</div>
+        <div class="ch-stat-count">${cnt}회 · 완료 ${compPct}%</div>
+      </div>
+      <div class="ch-stat-track">
+        <div class="ch-stat-fill${isFull?' full':''}" style="width:${pct}%"></div>
+      </div>
+    </div>`;
   }).join('');
 }
+
 function resetAll(){
   if(!confirm('모든 기록을 초기화할까요?'))return;
-  ST={done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0};
+  ST={done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{}};
   save();buildChGrid();renderStats();
 }
 
