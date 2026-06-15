@@ -1386,9 +1386,8 @@ function showPronunResult(key, target, said) {
   const sWords = said.toLowerCase().replace(/[^a-z ']/g,'').split(' ').filter(Boolean);
 
   let correct = 0;
-  const html = tWords.map(tw => {
-    // fuzzy match: exact or starts-with or included
-    const hit = sWords.some(sw => sw === tw || sw.startsWith(tw.slice(0,3)) || tw.startsWith(sw.slice(0,3)));
+  const wordHtml = tWords.map(tw => {
+    const hit = sWords.some(sw => sw===tw || sw.startsWith(tw.slice(0,3)) || tw.startsWith(sw.slice(0,3)));
     if(hit) correct++;
     return `<span class="pr-word ${hit?'ok':'miss'}">${tw}</span>`;
   }).join(' ');
@@ -1397,17 +1396,36 @@ function showPronunResult(key, target, said) {
   const isGood = score >= 70;
   const barColor = score >= 80 ? '#6BCB77' : score >= 50 ? '#FFD23F' : '#FF6B6B';
   const emoji = score === 100 ? '🌟' : score >= 80 ? '😊' : score >= 50 ? '🙂' : '😅';
+  const comment = score === 100 ? '완벽해요!' : score >= 80 ? '잘했어요!' : score >= 50 ? '조금 더 연습해요!' : '다시 도전해봐요!';
 
   resDiv.className = 'pronun-result show ' + (isGood ? 'good' : 'bad');
+
+  // 결과 HTML (재생 버튼은 아래에 따로 추가)
   resDiv.innerHTML = `
-    <div class="pr-score">${emoji} ${score}점</div>
+    <div class="pr-score">${emoji} ${score}점 &nbsp;<span style="font-size:0.85rem;font-weight:700;color:${barColor}">${comment}</span></div>
     <div class="score-bar-wrap"><div class="score-bar" style="width:${score}%;background:${barColor}"></div></div>
-    <div>${html}</div>
-    <div style="font-size:0.72rem;color:#888;margin-top:6px;">내가 말한 것: "${said}"</div>
+    <div style="margin:8px 0 4px;font-size:0.78rem;color:#888;font-weight:700">📝 정답 문장</div>
+    <div style="margin-bottom:6px">${wordHtml}</div>
+    <div style="font-size:0.72rem;color:#888;margin-bottom:6px">🗣 내가 말한 것: <b>"${said}"</b></div>
   `;
 
-  // Save to ST
-  const pKey = 'p'+key;
+  // 녹음 재생 버튼 복원 (있으면 다시 추가)
+  if(recAudioBlobs[key]) {
+    const playBtn = document.createElement('button');
+    playBtn.className = 'play-rec-btn';
+    playBtn.id = 'playback-' + key;
+    playBtn.innerHTML = '▶ 내 발음 듣기';
+    playBtn.onclick = () => {
+      const audio = new Audio(recAudioBlobs[key]);
+      audio.play();
+      playBtn.innerHTML = '🔊 재생중...';
+      audio.onended = () => { playBtn.innerHTML = '▶ 내 발음 듣기'; };
+    };
+    resDiv.appendChild(playBtn);
+  }
+
+  // 최고점수 저장
+  const pKey = 'p' + key;
   if(!ST.pronunBest) ST.pronunBest = {};
   if(!ST.pronunBest[pKey] || score > ST.pronunBest[pKey]) ST.pronunBest[pKey] = score;
   save();
