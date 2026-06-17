@@ -134,6 +134,22 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
 .hmap-days{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;margin-bottom:10px;}
 .hmap-day{font-size:0.6rem;color:var(--muted);text-align:center;}
 .empty-stat{text-align:center;padding:30px 16px;color:#bbb;font-size:0.85rem;}
+/* ── 일일 목표 ── */
+.daily-goal-card{background:linear-gradient(135deg,#FFD23F,#ff9f43);border-radius:18px;padding:16px 18px;margin-bottom:14px;box-shadow:0 4px 14px rgba(255,159,67,0.35);color:#5a3d00;}
+.daily-goal-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px;}
+.daily-goal-title{font-size:0.95rem;font-weight:900;}
+.daily-goal-count{font-size:1.3rem;font-weight:900;}
+.daily-goal-track{background:rgba(255,255,255,0.5);border-radius:10px;height:14px;overflow:hidden;margin-bottom:6px;}
+.daily-goal-fill{height:100%;border-radius:10px;background:linear-gradient(to right,#fff,#fffbe6);transition:width .5s;}
+.daily-goal-msg{font-size:0.8rem;font-weight:700;}
+.daily-goal-card.complete{background:linear-gradient(135deg,#6BCB77,#45a049);color:white;}
+.daily-goal-card.complete .daily-goal-track{background:rgba(255,255,255,0.3);}
+.daily-goal-card.complete .daily-goal-fill{background:white;}
+
+/* ── 전체 단어 퀴즈 ── */
+.aw-progress{font-size:0.78rem;color:var(--muted);text-align:center;margin-bottom:10px;}
+.aw-ch-badge{display:inline-block;background:var(--light);color:var(--purple);font-size:0.7rem;font-weight:700;padding:3px 10px;border-radius:10px;margin-bottom:8px;}
+
 @keyframes pulse{0%{box-shadow:0 0 0 0 rgba(91,184,245,.5);}70%{box-shadow:0 0 0 10px rgba(91,184,245,0);}100%{box-shadow:0 0 0 0 rgba(91,184,245,0);}}
 .pulsing{animation:pulse .7s ease-out;}
 /* ── 발음 확인 ── */
@@ -241,7 +257,44 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
   </div>
 </div>
 
+<!-- 전체 챕터 단어 퀴즈 -->
+<div id="page-allwords" class="page">
+  <div class="sec-title">🌍 전체 단어 퀴즈 (Ch.01~30)</div>
+  <div class="lesson-intro" style="margin-bottom:14px;">
+    <p style="font-size:0.8rem;color:#555;line-height:1.6">학습한 모든 챕터의 단어가 랜덤으로 나와요!<br>매일 풀면서 단어를 골고루 복습해보세요 🎲</p>
+  </div>
+  <div class="wq-wrap">
+    <div class="aw-progress" id="aw-progress"></div>
+    <div class="wq-box" id="aw-box">
+      <div class="aw-ch-badge" id="aw-ch-badge">Ch.01</div>
+      <div class="wq-emoji" id="aw-emoji">🎯</div>
+      <div class="wq-label">이 뜻의 영어 단어는?</div>
+      <div class="wq-ko" id="aw-ko">—</div>
+      <div class="wq-en" id="aw-en"></div>
+    </div>
+    <div class="wq-choices" id="aw-choices"></div>
+    <div class="wq-btns">
+      <button class="btn-listen" onclick="awSpeak()">🔊 듣기</button>
+      <button class="btn-next"   onclick="awNext()">다음 →</button>
+    </div>
+    <div class="congrats" id="aw-congrats">
+      <div class="big">🌟</div><h2>오늘도 완료!</h2><p id="aw-result-msg">전체 단어 퀴즈를 풀었어요!</p>
+      <button class="reset-btn" style="margin-top:16px" onclick="startAllWordsQuiz()">다시 시작</button>
+    </div>
+  </div>
+</div>
+
 <div id="page-stats" class="page">
+  <!-- 일일 목표 -->
+  <div class="daily-goal-card" id="daily-goal-card">
+    <div class="daily-goal-top">
+      <div class="daily-goal-title">🎯 오늘의 단어 목표</div>
+      <div class="daily-goal-count" id="daily-goal-count">0 / 50</div>
+    </div>
+    <div class="daily-goal-track"><div class="daily-goal-fill" id="daily-goal-fill" style="width:0%"></div></div>
+    <div class="daily-goal-msg" id="daily-goal-msg">오늘 단어 50개를 눌러보면 어떨까요?</div>
+  </div>
+
   <!-- 요약 카드 -->
   <div class="sec-title">📊 전체 요약</div>
   <div class="stats-grid">
@@ -270,9 +323,10 @@ header p{font-size:0.78rem;opacity:0.85;margin-top:3px;}
 </div>
 
 <div class="bottom-nav">
-  <button class="nav-btn active" onclick="switchPage('home')"  id="nav-home"><span class="ni">📚</span>챕터</button>
-  <button class="nav-btn"        onclick="switchPage('quiz')"  id="nav-quiz"><span class="ni">📝</span>문장퀴즈</button>
-  <button class="nav-btn"        onclick="switchPage('stats')" id="nav-stats"><span class="ni">⭐</span>기록</button>
+  <button class="nav-btn active" onclick="switchPage('home')"     id="nav-home"><span class="ni">📚</span>챕터</button>
+  <button class="nav-btn"        onclick="switchPage('quiz')"     id="nav-quiz"><span class="ni">📝</span>문장퀴즈</button>
+  <button class="nav-btn"        onclick="switchPage('allwords')" id="nav-allwords"><span class="ni">🌍</span>전체단어</button>
+  <button class="nav-btn"        onclick="switchPage('stats')"    id="nav-stats"><span class="ni">⭐</span>기록</button>
 </div>
 
 <script>
@@ -872,8 +926,9 @@ const CHAPTERS = [
 ];
 
 // ── STATE ──
-let ST = JSON.parse(localStorage.getItem('eng30v2')||'null') || {done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{}};
+let ST = JSON.parse(localStorage.getItem('eng30v2')||'null') || {done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{},dailyWords:{}};
 if(!ST.log) ST.log={};
+if(!ST.dailyWords) ST.dailyWords={};
 function save(){localStorage.setItem('eng30v2',JSON.stringify(ST));}
 function allSentences(){return CHAPTERS.flatMap(ch=>ch.sentences.map((s,i)=>({...s,chId:ch.id,idx:i,key:`ch${ch.id}_${i}`})));}
 function allWords(){return CHAPTERS.flatMap(ch=>ch.words.map((w,i)=>({...w,chId:ch.id,idx:i,key:`wch${ch.id}_${i}`})));}
@@ -884,8 +939,9 @@ function switchPage(name){
   document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
   document.getElementById('page-'+name).classList.add('active');
   document.getElementById('nav-'+name)?.classList.add('active');
-  if(name==='quiz')  startQuiz();
-  if(name==='stats') renderStats();
+  if(name==='quiz')      startQuiz();
+  if(name==='stats')     renderStats();
+  if(name==='allwords')  startAllWordsQuiz();
 }
 function goHome(){switchPage('home');}
 
@@ -1044,7 +1100,9 @@ function wqAnswer(btn,correct){
   if(wqAnswered)return;wqAnswered=true;ST.wqTot++;
   if(correct){btn.classList.add('correct');ST.wqCor++;speak('Great!');if(!ST.wdone[wqCurrent.key])ST.wdone[wqCurrent.key]=true;}
   else{btn.classList.add('wrong');document.querySelectorAll('.wq-choice').forEach(b=>{if(b.textContent===wqCurrent.en)b.classList.add('correct');});speak(wqCurrent.en);}
-  const enEl=document.getElementById('wq-en');enEl.textContent=wqCurrent.en;enEl.classList.add('show');save();
+  const enEl=document.getElementById('wq-en');enEl.textContent=wqCurrent.en;enEl.classList.add('show');
+  bumpDailyWordCount();
+  save();
 }
 
 // ── SENTENCE QUIZ ──
@@ -1084,6 +1142,40 @@ function qAnswer(btn,correct){
   if(correct){btn.classList.add('correct');ST.qCor++;speak('Great job!');}
   else{btn.classList.add('wrong');document.querySelectorAll('.choice').forEach(b=>{if(b.textContent===qCurrent.en)b.classList.add('correct');});speak(qCurrent.en);}
   document.getElementById('q-en').textContent=qCurrent.en;document.getElementById('q-en').classList.add('show');save();
+}
+
+// ── 일일 단어 목표 ──
+const DAILY_GOAL = 50;
+
+function bumpDailyWordCount(){
+  const k = dateKey(new Date());
+  if(!ST.dailyWords) ST.dailyWords = {};
+  ST.dailyWords[k] = (ST.dailyWords[k]||0) + 1;
+}
+
+function renderDailyGoal(){
+  const k = dateKey(new Date());
+  const count = (ST.dailyWords && ST.dailyWords[k]) || 0;
+  const pct = Math.min(100, Math.round(count/DAILY_GOAL*100));
+  const card = document.getElementById('daily-goal-card');
+  const fill = document.getElementById('daily-goal-fill');
+  const cntEl = document.getElementById('daily-goal-count');
+  const msgEl = document.getElementById('daily-goal-msg');
+
+  cntEl.textContent = `${count} / ${DAILY_GOAL}`;
+  fill.style.width = pct + '%';
+
+  if(count >= DAILY_GOAL){
+    card.classList.add('complete');
+    msgEl.textContent = '🎉 오늘 목표 달성! 정말 잘했어요!';
+  } else {
+    card.classList.remove('complete');
+    const remain = DAILY_GOAL - count;
+    if(count===0) msgEl.textContent = '오늘 단어 50개를 눌러보면 어떨까요?';
+    else if(remain<=10) msgEl.textContent = `거의 다 왔어요! ${remain}개만 더!`;
+    else if(remain<=30) msgEl.textContent = `좋아요! ${remain}개 더 하면 목표 달성!`;
+    else msgEl.textContent = `${count}개 완료! ${remain}개 남았어요. 할 수 있어요!`;
+  }
 }
 
 // ── STATS ──
@@ -1126,6 +1218,7 @@ function switchPeriod(p){
 }
 
 function renderStats(){
+  renderDailyGoal();
   document.getElementById('st-plays').textContent=ST.totalPlays||0;
   document.getElementById('st-done').textContent=Object.keys(ST.done).length;
   document.getElementById('st-wdone').textContent=Object.keys(ST.wdone).length;
@@ -1163,9 +1256,11 @@ function renderPeriodStats(){
     dailyEl.innerHTML='<div class="empty-stat">📖 아직 이 기간에 학습 기록이 없어요!</div>';
   } else if(period==='week'){
     dailyEl.innerHTML = `<div style="background:white;border-radius:14px;padding:14px 16px;margin-bottom:12px;box-shadow:0 2px 8px rgba(0,0,0,0.06)">
+      <div style="font-size:0.72rem;color:var(--muted);margin-bottom:8px">📖 일별 학습 활동 (문장+단어 합계)</div>
       ${dates.map(d=>{
         const k=dateKey(d);
         const v=dayTotals[k]||0;
+        const wc=(ST.dailyWords&&ST.dailyWords[k])||0;
         const pct=Math.round(v/maxDay*100);
         const isToday=k===dateKey(new Date());
         return`<div class="day-row">
@@ -1174,7 +1269,7 @@ function renderPeriodStats(){
             <div class="day-bar-fill" style="width:${pct}%"></div>
             ${v>0?`<div class="day-bar-num">${v}</div>`:''}
           </div>
-          <div style="font-size:0.7rem;color:var(--muted);min-width:24px;text-align:right">${v||''}</div>
+          <div style="font-size:0.68rem;color:var(--coral);min-width:50px;text-align:right">${wc>0?'🔤'+wc:''}</div>
         </div>`;
       }).join('')}
     </div>`;
@@ -1241,7 +1336,7 @@ function renderPeriodStats(){
 
 function resetAll(){
   if(!confirm('모든 기록을 초기화할까요?'))return;
-  ST={done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{}};
+  ST={done:{},plays:{},totalPlays:0,wdone:{},qTot:0,qCor:0,wqTot:0,wqCor:0,log:{},dailyWords:{}};
   save();buildChGrid();renderStats();
 }
 
@@ -1428,6 +1523,83 @@ function showPronunResult(key, target, said) {
   const pKey = 'p' + key;
   if(!ST.pronunBest) ST.pronunBest = {};
   if(!ST.pronunBest[pKey] || score > ST.pronunBest[pKey]) ST.pronunBest[pKey] = score;
+  save();
+}
+
+// ── 전체 챕터 단어 퀴즈 (Ch.01~30 통합) ──
+let awQueue=[], awCurrent=null, awAnswered=false, awTotal=0, awCorrect=0;
+
+function startAllWordsQuiz(){
+  document.getElementById('aw-congrats').classList.remove('show');
+  document.getElementById('aw-box').style.display='';
+  document.getElementById('aw-choices').style.display='';
+  document.querySelector('#page-allwords .wq-btns').style.display='';
+
+  const pool = allWords(); // 모든 챕터의 모든 단어
+  awQueue = shuffle([...pool]).slice(0, Math.min(20, pool.length));
+  awTotal = awQueue.length;
+  awCorrect = 0;
+  awNext();
+}
+
+function awNext(){
+  if(awQueue.length===0){
+    document.getElementById('aw-box').style.display='none';
+    document.getElementById('aw-choices').style.display='none';
+    document.querySelector('#page-allwords .wq-btns').style.display='none';
+    document.getElementById('aw-congrats').classList.add('show');
+    document.getElementById('aw-result-msg').textContent =
+      `${awTotal}문제 중 ${awCorrect}개 정답! (${Math.round(awCorrect/awTotal*100)}%)`;
+    return;
+  }
+  awAnswered = false;
+  awCurrent = awQueue.shift();
+
+  document.getElementById('aw-ch-badge').textContent = `Ch.${String(awCurrent.chId).padStart(2,'0')}`;
+  document.getElementById('aw-emoji').textContent = awCurrent.emoji;
+  document.getElementById('aw-ko').textContent = awCurrent.ko;
+  const enEl = document.getElementById('aw-en');
+  enEl.textContent=''; enEl.classList.remove('show');
+  document.getElementById('aw-progress').textContent = `${awTotal-awQueue.length} / ${awTotal} 문제`;
+
+  const pool = allWords();
+  const wrong = shuffle(pool.filter(w=>w.en!==awCurrent.en)).slice(0,3);
+  const choices = shuffle([awCurrent, ...wrong]);
+
+  const box = document.getElementById('aw-choices');
+  box.innerHTML='';
+  choices.forEach(c=>{
+    const btn=document.createElement('button');
+    btn.className='wq-choice';
+    btn.textContent=c.en;
+    btn.onclick=()=>awAnswer(btn, c.en===awCurrent.en);
+    box.appendChild(btn);
+  });
+  speak(awCurrent.en);
+}
+
+function awSpeak(){ if(awCurrent) speak(awCurrent.en); }
+
+function awAnswer(btn, correct){
+  if(awAnswered) return;
+  awAnswered = true;
+  if(correct){
+    btn.classList.add('correct');
+    awCorrect++;
+    speak('Great!');
+    if(!ST.wdone[awCurrent.key]) ST.wdone[awCurrent.key]=true;
+  } else {
+    btn.classList.add('wrong');
+    document.querySelectorAll('#aw-choices .wq-choice').forEach(b=>{
+      if(b.textContent===awCurrent.en) b.classList.add('correct');
+    });
+    speak(awCurrent.en);
+  }
+  const enEl = document.getElementById('aw-en');
+  enEl.textContent = awCurrent.en;
+  enEl.classList.add('show');
+  bumpDailyWordCount();
+  logActivity(awCurrent.chId, 'w');
   save();
 }
 
